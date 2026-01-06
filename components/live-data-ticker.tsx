@@ -3,68 +3,147 @@
 import { useEffect, useState } from "react"
 
 interface TickerData {
-  hlPrice: number
+  hypePrice: number
   volume24h: number
   openInterest: number
   fundingRate: number
 }
 
-function generateMockData(): TickerData {
-  return {
-    hlPrice: 12.45 + (Math.random() - 0.5) * 0.3,
-    volume24h: 285_000_000 + (Math.random() - 0.5) * 50_000_000,
-    openInterest: 1_250_000_000 + (Math.random() - 0.5) * 100_000_000,
-    fundingRate: 0.0045 + (Math.random() - 0.5) * 0.002,
-  }
+type HyperliquidMeta = {
+  universe: { name: string }[]
 }
 
+type HyperliquidAssetCtx = {
+  funding?: string
+  openInterest?: string
+  dayNtlVlm?: string
+  markPx?: string
+  midPx?: string
+  oraclePx?: string
+}
+
+const INFO_ENDPOINT = "https://api.hyperliquid.xyz/info"
+const HYPE_SYMBOL = "HYPE"
+
 export function LiveDataTicker() {
-  const [data, setData] = useState<TickerData>(generateMockData())
+  const [data, setData] = useState<TickerData | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newData = generateMockData()
-      // Determine which value changed most significantly
-      const changes = [
-        { key: "hl", diff: Math.abs(newData.hlPrice - data.hlPrice) / data.hlPrice },
-        { key: "vol", diff: Math.abs(newData.volume24h - data.volume24h) / data.volume24h },
-        { key: "oi", diff: Math.abs(newData.openInterest - data.openInterest) / data.openInterest },
-        { key: "fr", diff: Math.abs(newData.fundingRate - data.fundingRate) / Math.abs(data.fundingRate) },
-      ]
-      const maxChange = changes.reduce((a, b) => (a.diff > b.diff ? a : b))
-      setFlash(maxChange.key)
-      setData(newData)
-      setTimeout(() => setFlash(null), 200)
-    }, 1000)
+    let active = true
 
-    return () => clearInterval(interval)
-  }, [data])
+    const load = async () => {
+      const next = await fetchHyperliquidTicker()
+      if (!next || !active) return
+      setData((prev) => {
+        if (prev) {
+          const changes = [
+            { key: "hype", diff: ratioDiff(next.hypePrice, prev.hypePrice) },
+            { key: "vol", diff: ratioDiff(next.volume24h, prev.volume24h) },
+            { key: "oi", diff: ratioDiff(next.openInterest, prev.openInterest) },
+            { key: "fr", diff: ratioDiff(next.fundingRate, prev.fundingRate) },
+          ]
+          const maxChange = changes.reduce((a, b) => (a.diff > b.diff ? a : b))
+          setFlash(maxChange.key)
+          setTimeout(() => setFlash(null), 200)
+        }
+        return next
+      })
+    }
+
+    load()
+    const interval = setInterval(load, 3000)
+
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [])
 
   return (
     <div className="flex items-center gap-3 text-[10px] overflow-x-auto scrollbar-hide">
-      <div className={`flex items-center gap-1 transition-all ${flash === "hl" ? "data-flash" : ""}`}>
-        <span className="text-muted-foreground">$HL:</span>
-        <span className="text-primary glow-text">${data.hlPrice.toFixed(2)}</span>
+      <div className={`flex items-center gap-1 transition-all ${flash === "hype" ? "data-flash" : ""}`}>
+        <span className="text-muted-foreground">$HYPE:</span>
+        <span className="text-primary glow-text">{formatPrice(data?.hypePrice)}</span>
       </div>
       <span className="text-muted-foreground">|</span>
       <div className={`flex items-center gap-1 transition-all ${flash === "vol" ? "data-flash" : ""}`}>
         <span className="text-muted-foreground">VOL_24H:</span>
-        <span className="text-primary">${(data.volume24h / 1_000_000).toFixed(1)}M</span>
+        <span className="text-primary">{formatVolume(data?.volume24h)}</span>
       </div>
       <span className="text-muted-foreground">|</span>
       <div className={`flex items-center gap-1 transition-all ${flash === "oi" ? "data-flash" : ""}`}>
         <span className="text-muted-foreground">OI:</span>
-        <span className="text-primary">${(data.openInterest / 1_000_000_000).toFixed(2)}B</span>
+        <span className="text-primary">{formatOpenInterest(data?.openInterest)}</span>
       </div>
       <span className="text-muted-foreground">|</span>
       <div className={`flex items-center gap-1 transition-all ${flash === "fr" ? "data-flash" : ""}`}>
         <span className="text-muted-foreground">FR:</span>
-        <span className={data.fundingRate >= 0 ? "text-primary" : "text-destructive"}>
-          {data.fundingRate >= 0 ? "+" : ""}
-          {(data.fundingRate * 100).toFixed(4)}%
+        <span className={data && data.fundingRate < 0 ? "text-destructive" : "text-primary"}>
+          {formatFundingRate(data?.fundingRate)}
         </span>
       </div>
     </div>
   )
+}
+
+async function fetchHyperliquidTicker(): Promise<TickerData | null> {
+  try {
+    const response = await fetch(INFO_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "metaAndAssetCtxs" }),
+    })
+    if (!response.ok) return null
+    const payload = (await response.json()) as [HyperliquidMeta, HyperliquidAssetCtx[]]
+    const meta = payload?.[0]
+    const ctxs = payload?.[1]
+    if (!meta?.universe || !Array.isArray(ctxs)) return null
+    const index = meta.universe.findIndex((asset) => asset.name === HYPE_SYMBOL)
+    if (index === -1 || !ctxs[index]) return null
+    const ctx = ctxs[index]
+    const price = parseNumber(ctx.markPx ?? ctx.midPx ?? ctx.oraclePx)
+    const volume = parseNumber(ctx.dayNtlVlm)
+    const openInterest = parseNumber(ctx.openInterest) * (price || 0)
+    const fundingRate = parseNumber(ctx.funding)
+    return {
+      hypePrice: price,
+      volume24h: volume,
+      openInterest,
+      fundingRate,
+    }
+  } catch {
+    return null
+  }
+}
+
+function parseNumber(value?: string): number {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : 0
+}
+
+function ratioDiff(next: number, prev: number): number {
+  if (!Number.isFinite(prev) || prev === 0) return Math.abs(next)
+  return Math.abs(next - prev) / Math.abs(prev)
+}
+
+function formatPrice(value?: number) {
+  if (!value) return "--"
+  return `$${value.toFixed(2)}`
+}
+
+function formatVolume(value?: number) {
+  if (!value) return "--"
+  return `$${(value / 1_000_000).toFixed(1)}M`
+}
+
+function formatOpenInterest(value?: number) {
+  if (!value) return "--"
+  return `$${(value / 1_000_000_000).toFixed(2)}B`
+}
+
+function formatFundingRate(value?: number) {
+  if (value === undefined || value === null) return "--"
+  const percent = value * 100
+  return `${percent >= 0 ? "+" : ""}${percent.toFixed(4)}%`
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 
 const MESSAGES = [
-  "VAULT_4 is a decentralized perpetuals trading vault powered by autonomous AI strategies. Your funds are allocated across multiple markets to maximize risk-adjusted returns.",
+  "Vault 4 is an AI fund-of-vaults on Hyperliquid. It ranks vault PnL, risk, and market regime, reallocates as conditions change, and auto TP/SL to lock gains and cut tails. Flexible cadence, transparent, always-on pursuit of short-horizon edge.",
   "WARNING: Trading cryptocurrencies involves substantial risk of loss. Past performance does not guarantee future results. Only deposit funds you can afford to lose.",
   "DISCLAIMER: This protocol is provided AS-IS without warranties. Smart contract interactions are irreversible. Verify all transactions before signing.",
   "RISK NOTICE: Leverage trading can result in liquidation. The vault may experience drawdowns during volatile market conditions. DYOR before depositing.",

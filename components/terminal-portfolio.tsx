@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useAccount } from "wagmi"
 import { TerminalHeader } from "./terminal-header"
 import { AccountStats } from "./account-stats"
 import { PnlChart } from "./pnl-chart"
@@ -10,15 +10,15 @@ import { PerformanceMetrics } from "./performance-metrics"
 import { CyclingTextPanel } from "./cycling-text-panel"
 
 export function TerminalPortfolio() {
-  const [isConnected, setIsConnected] = useState(false)
+  const { isConnected } = useAccount()
 
   return (
     <main className="min-h-screen bg-background p-3 md:p-4 max-w-2xl mx-auto">
-      <TerminalHeader isConnected={isConnected} onConnect={() => setIsConnected(!isConnected)} />
+      <TerminalHeader />
 
       <div className="space-y-3 mt-4">
-        <AccountStats isConnected={isConnected} />
-        <ActionButtons />
+        {isConnected && <AccountStats isConnected={isConnected} />}
+        {isConnected && <ActionButtons />}
         <PerformanceMetrics />
         <PnlChart />
         <CyclingTextPanel />
@@ -27,7 +27,7 @@ export function TerminalPortfolio() {
 
       <footer className="mt-6 pt-4 border-t border-border">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="glow-text">[ VAULT_4_ONLINE ]</span>
+          <span className="glow-text">[ Vault 4 - AI-driven fund-of-vaults ]</span>
           <span>v1.0.0_MAINNET</span>
         </div>
       </footer>
