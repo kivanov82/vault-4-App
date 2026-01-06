@@ -37,7 +37,7 @@ export function TerminalHeader({ isConnected, onConnect }: TerminalHeaderProps) 
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
           <h1 className="text-sm md:text-base font-bold glow-pulse truncate">{">"} VAULT_4</h1>
-          <TypingText text="// DECENTRALIZED PORTFOLIO SYSTEM" className="text-xs text-muted-foreground mt-1" />
+          <TypingText text="// HYPERLIQUID AI-TRADING AGENT" className="text-xs text-muted-foreground mt-1" />
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
