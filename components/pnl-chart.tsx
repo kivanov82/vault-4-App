@@ -1,8 +1,9 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { BlinkingLabel } from "./blinking-label"
+import { LiveDataTicker } from "./live-data-ticker"
 
 function generatePnlData(days: number) {
   const points = []
@@ -33,9 +34,23 @@ function generateAccValueData(days: number) {
   return points
 }
 
+function AnimatedDot(props: { cx?: number; cy?: number; stroke?: string }) {
+  const { cx, cy, stroke } = props
+  if (!cx || !cy) return null
+
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={6} fill={stroke} opacity={0.2} className="oscilloscope-pulse" />
+      <circle cx={cx} cy={cy} r={4} fill={stroke} opacity={0.4} className="oscilloscope-pulse-delay" />
+      <circle cx={cx} cy={cy} r={2} fill={stroke} />
+    </g>
+  )
+}
+
 export function PnlChart() {
   const [chartMode, setChartMode] = useState<"PNL" | "ACC_VALUE">("PNL")
   const [timePeriod, setTimePeriod] = useState<"7D" | "30D" | "ALL">("30D")
+  const [animationKey, setAnimationKey] = useState(0)
 
   const days = timePeriod === "7D" ? 7 : timePeriod === "30D" ? 30 : 90
 
@@ -49,8 +64,16 @@ export function PnlChart() {
   const strokeColor = chartMode === "PNL" ? "#00ff41" : "#00d4ff"
   const gradientId = chartMode === "PNL" ? "pnlGradient" : "accGradient"
 
+  useEffect(() => {
+    setAnimationKey((k) => k + 1)
+  }, [chartMode, timePeriod])
+
   return (
-    <div className="terminal-border p-3">
+    <div className="terminal-border p-3 chart-container">
+      <div className="mb-3 pb-2 border-b border-border">
+        <LiveDataTicker />
+      </div>
+
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1 text-xs">
           <button
@@ -92,18 +115,28 @@ export function PnlChart() {
         </div>
       </div>
 
-      <div className="mb-2">
+      <div className="mb-2 flex items-center gap-2">
         <BlinkingLabel text={chartMode === "PNL" ? "PNL_CHART" : "ACCOUNT_VALUE_CHART"} />
+        <span className="signal-dot" />
+        <span className="text-[10px] text-muted-foreground signal-text">LIVE</span>
       </div>
 
-      <div className="h-40 md:h-48">
+      <div className="h-40 md:h-48 chart-glow">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+          <AreaChart key={animationKey} data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={strokeColor} stopOpacity={0.3} />
+                <stop offset="5%" stopColor={strokeColor} stopOpacity={0.4} />
+                <stop offset="50%" stopColor={strokeColor} stopOpacity={0.1} />
                 <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
               </linearGradient>
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
             </defs>
             <XAxis
               dataKey="label"
@@ -128,6 +161,7 @@ export function PnlChart() {
                 color: strokeColor,
                 fontSize: 12,
                 fontFamily: "monospace",
+                boxShadow: `0 0 15px ${strokeColor}40`,
               }}
               formatter={(value: number) => [
                 chartMode === "PNL"
@@ -144,11 +178,17 @@ export function PnlChart() {
               strokeWidth={2}
               fill={`url(#${gradientId})`}
               dot={false}
-              activeDot={{ r: 4, fill: strokeColor, stroke: "#0a0a0a", strokeWidth: 2 }}
+              activeDot={<AnimatedDot stroke={strokeColor} />}
+              filter="url(#glow)"
+              isAnimationActive={true}
+              animationDuration={1500}
+              animationEasing="ease-out"
             />
           </AreaChart>
         </ResponsiveContainer>
       </div>
+
+      <div className="chart-grid-overlay" />
     </div>
   )
 }

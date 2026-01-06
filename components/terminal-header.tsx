@@ -8,13 +8,24 @@ interface TerminalHeaderProps {
   onConnect: () => void
 }
 
+const LAUNCH_DATE = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+
 export function TerminalHeader({ isConnected, onConnect }: TerminalHeaderProps) {
-  const [currentTime, setCurrentTime] = useState("")
+  const [timeSinceLaunch, setTimeSinceLaunch] = useState("")
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date()
-      setCurrentTime(now.toLocaleTimeString("en-US", { hour12: false }))
+      const diff = now.getTime() - LAUNCH_DATE.getTime()
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+      setTimeSinceLaunch(
+        `${days}d ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
+      )
     }
     updateTime()
     const interval = setInterval(updateTime, 1000)
@@ -30,7 +41,10 @@ export function TerminalHeader({ isConnected, onConnect }: TerminalHeaderProps) 
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs text-muted-foreground hidden sm:block font-mono">{currentTime}</span>
+          <div className="text-xs text-muted-foreground hidden sm:flex flex-col items-end font-mono">
+            <span className="text-[10px] opacity-60">UPTIME</span>
+            <span className="text-primary">{timeSinceLaunch}</span>
+          </div>
           <button onClick={onConnect} className="terminal-button px-3 py-1.5 text-xs">
             {isConnected ? "[ CONNECTED ]" : "[ CONNECT ]"}
           </button>
