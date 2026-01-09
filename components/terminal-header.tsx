@@ -4,8 +4,9 @@ import { useEffect, useState } from "react"
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from "wagmi"
 import { TypingText } from "./typing-text"
 import { hyperliquidChain } from "@/lib/wagmi"
+import { LAUNCH_DATE_ISO } from "@/lib/constants"
 
-const LAUNCH_DATE = new Date("2026-01-06T22:17:00+01:00")
+const LAUNCH_DATE = new Date(LAUNCH_DATE_ISO)
 
 export function TerminalHeader() {
   const [timeSinceLaunch, setTimeSinceLaunch] = useState("")
@@ -15,7 +16,7 @@ export function TerminalHeader() {
   const { disconnect } = useDisconnect()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
   const isWrongChain = isConnected && chainId !== hyperliquidChain.id
-  const labelText = "// Vault 4 - AI-driven fund-of-vaults"
+  const labelText = "// Vault 4 - AI-driven fund-of-vaults on Hyperliquid"
 
   useEffect(() => {
     const updateTime = () => {
