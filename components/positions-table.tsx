@@ -48,6 +48,10 @@ export function PositionsTable() {
   const [loadingPositions, setLoadingPositions] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyPage, setHistoryPage] = useState(1)
+  const [sortConfig, setSortConfig] = useState<{
+    key: "asset" | "size" | "amount" | "pnl" | "roe"
+    direction: "asc" | "desc"
+  }>({ key: "size", direction: "desc" })
 
   const tabs = [
     { id: "positions" as const, label: "POSITIONS" },
@@ -103,6 +107,59 @@ export function PositionsTable() {
   const netPnl = positionsData?.netPnlUsd ?? null
   const totalPositions = positionsData?.totalPositions ?? 0
   const totalHistoryPages = historyData?.totalPages ?? 1
+  const totalTvl =
+    positionsData?.totalInvestedUsd ??
+    positions.reduce((sum, position) => sum + (position.amountUsd ?? 0), 0)
+  const positionsWithSize = positions.map((position) => ({
+    ...position,
+    sizePctFromTvl:
+      totalTvl > 0 && position.amountUsd !== null && position.amountUsd !== undefined
+        ? (position.amountUsd / totalTvl) * 100
+        : null,
+  }))
+  const sortedPositions = [...positionsWithSize].sort((a, b) => {
+    const direction = sortConfig.direction === "asc" ? 1 : -1
+    const compareNullable = (left: number | string | null, right: number | string | null) => {
+      if (left === null && right === null) return 0
+      if (left === null) return 1
+      if (right === null) return -1
+      if (typeof left === "string" && typeof right === "string") return left.localeCompare(right)
+      if (left > right) return 1
+      if (left < right) return -1
+      return 0
+    }
+
+    switch (sortConfig.key) {
+      case "asset":
+        return (
+          direction *
+          compareNullable(a.vaultName ?? a.vaultAddress, b.vaultName ?? b.vaultAddress)
+        )
+      case "size":
+        return direction * compareNullable(a.sizePctFromTvl, b.sizePctFromTvl)
+      case "amount":
+        return direction * compareNullable(a.amountUsd, b.amountUsd)
+      case "pnl":
+        return direction * compareNullable(a.pnlUsd, b.pnlUsd)
+      case "roe":
+        return direction * compareNullable(a.roePct, b.roePct)
+      default:
+        return 0
+    }
+  })
+  const toggleSort = (key: "asset" | "size" | "amount" | "pnl" | "roe") => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+      }
+      const defaultDirection = key === "asset" ? "asc" : "desc"
+      return { key, direction: defaultDirection }
+    })
+  }
+  const sortIndicator = (key: "asset" | "size" | "amount" | "pnl" | "roe") => {
+    if (sortConfig.key !== key) return ""
+    return sortConfig.direction === "asc" ? " ^" : " v"
+  }
 
   return (
     <div className="terminal-border p-3">
@@ -130,20 +187,47 @@ export function PositionsTable() {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border text-muted-foreground">
-              <th className="text-left py-2 pr-2">ASSET</th>
-              <th className="text-right py-2 px-2">SIZE</th>
-              <th className="text-right py-2 px-2 hidden sm:table-cell">AMOUNT</th>
-              <th className="text-right py-2 px-2">PNL</th>
-              <th className="text-right py-2 pl-2">ROE</th>
+              <th
+                className="text-left py-2 pr-2 cursor-pointer select-none"
+                onClick={() => toggleSort("asset")}
+              >
+                ASSET{sortIndicator("asset")}
+              </th>
+              <th
+                className="text-right py-2 px-2 cursor-pointer select-none"
+                onClick={() => toggleSort("size")}
+              >
+                SIZE{sortIndicator("size")}
+              </th>
+              <th
+                className="text-right py-2 px-2 hidden sm:table-cell cursor-pointer select-none"
+                onClick={() => toggleSort("amount")}
+              >
+                AMOUNT{sortIndicator("amount")}
+              </th>
+              <th
+                className="text-right py-2 px-2 cursor-pointer select-none"
+                onClick={() => toggleSort("pnl")}
+              >
+                PNL{sortIndicator("pnl")}
+              </th>
+              <th
+                className="text-right py-2 pl-2 cursor-pointer select-none"
+                onClick={() => toggleSort("roe")}
+              >
+                ROE{sortIndicator("roe")}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {positions.map((pos, i) => (
+            {sortedPositions.map((pos, i) => (
               <tr key={i} className="border-b border-border/30 hover:bg-secondary/30 transition-colors">
                 <td className="py-2 pr-2 font-semibold text-primary">
                   {pos.vaultName ?? formatAddress(pos.vaultAddress)}
                 </td>
-                <td className="py-2 px-2 text-right text-primary">{formatPercent(pos.sizePct)}</td>
+                <td className="py-2 px-2 text-right text-primary">
+                  {formatPercent(pos.sizePctFromTvl)}
+                </td>
                 <td className="py-2 px-2 text-right hidden sm:table-cell">{formatUsd(pos.amountUsd)}</td>
                 <td className={`py-2 px-2 text-right ${formatSignedClass(pos.pnlUsd)}`}>
                   {formatUsdSigned(pos.pnlUsd)}
