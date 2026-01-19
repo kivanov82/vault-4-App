@@ -6,9 +6,9 @@ import { BlinkingLabel } from "./blinking-label"
 type MetricsResponse = {
   tvlUsd: number | null
   tvlChange30dUsd: number | null
+  pnlChange30dPct: number | null
   winRatePct: number | null
   maxDrawdownPct: number | null
-  sharpeRatio: number | null
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_VAULT_API_BASE_URL ?? "http://localhost:3000"
@@ -50,8 +50,8 @@ export function PerformanceMetrics() {
           : metrics?.tvlChange30dUsd,
     },
     {
-      label: "WIN_RATE",
-      value: formatPercent(metrics?.winRatePct),
+      label: "30D_PERFORMANCE",
+      value: formatPercentSigned(metrics?.pnlChange30dPct),
       change: null,
       changeValue: null,
     },
@@ -62,8 +62,8 @@ export function PerformanceMetrics() {
       changeValue: null,
     },
     {
-      label: "SHARPE_RATIO",
-      value: formatRatio(metrics?.sharpeRatio),
+      label: "WIN_RATE",
+      value: formatPercent(metrics?.winRatePct),
       change: null,
       changeValue: null,
     },
@@ -112,11 +112,6 @@ function formatPercentSigned(value?: number | null) {
   if (value === undefined || value === null) return "--"
   const prefix = value >= 0 ? "+" : "-"
   return `${prefix}${Math.abs(value).toFixed(2)}%`
-}
-
-function formatRatio(value?: number | null) {
-  if (value === undefined || value === null) return "--"
-  return value.toFixed(2)
 }
 
 function formatSignedClass(value?: number | null) {
