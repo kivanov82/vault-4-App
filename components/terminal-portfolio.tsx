@@ -27,8 +27,8 @@ export function TerminalPortfolio() {
           {isConnected && <ActionButtons />}
           <PerformanceMetrics />
           <PnlChart />
-          <CyclingTextPanel />
           <PositionsTable />
+          <CyclingTextPanel />
         </div>
 
         <footer className="mt-6 pt-4 border-t border-border">
