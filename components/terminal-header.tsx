@@ -43,7 +43,12 @@ export function TerminalHeader() {
     <header className="terminal-border p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h1 className="text-sm md:text-base font-bold glow-pulse truncate">{">"} Vault 4</h1>
+          <h1 
+            className="text-sm md:text-base font-bold glow-pulse truncate glitch-hover cursor-default"
+            data-text="> Vault 4"
+          >
+            {">"} Vault 4
+          </h1>
           <TypingText text={labelText} className="text-xs text-muted-foreground mt-1" />
         </div>
 
