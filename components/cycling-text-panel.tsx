@@ -3,25 +3,21 @@
 import { useEffect, useState, useCallback } from "react"
 
 const MESSAGES = [
-  "Vault 4 is an AI fund-of-vaults on Hyperliquid. It ranks vault PnL, risk, and market regime, reallocates as conditions change, and auto TP/SL to lock gains and cut tails. Flexible cadence, transparent, always-on pursuit of short-horizon edge.",
-  "WARNING: Trading cryptocurrencies involves substantial risk of loss. Past performance does not guarantee future results. Only deposit funds you can afford to lose.",
-  "DISCLAIMER: This protocol is provided AS-IS without warranties. Smart contract interactions are irreversible. Verify all transactions before signing.",
-  "RISK NOTICE: Leverage trading can result in liquidation. The vault may experience drawdowns during volatile market conditions. DYOR before depositing.",
+  { text: "Vault 4 is an AI fund-of-vaults on Hyperliquid. It ranks vault PnL, risk, and market regime, reallocates as conditions change, and auto TP/SL to lock gains and cut tails.", type: "info" as const },
+  { text: "WARNING: Trading cryptocurrencies involves substantial risk of loss. Past performance does not guarantee future results. Only deposit funds you can afford to lose.", type: "warn" as const },
+  { text: "DISCLAIMER: This protocol is provided AS-IS without warranties. Smart contract interactions are irreversible. Verify all transactions before signing.", type: "warn" as const },
+  { text: "RISK NOTICE: Leverage trading can result in liquidation. The vault may experience drawdowns during volatile market conditions. DYOR before depositing.", type: "warn" as const },
 ]
 
-interface CyclingTextPanelProps {
-  className?: string
-}
-
-export function CyclingTextPanel({ className = "" }: CyclingTextPanelProps) {
+export function CyclingTextPanel({ className = "" }: { className?: string }) {
   const [messageIndex, setMessageIndex] = useState(0)
   const [displayedText, setDisplayedText] = useState("")
   const [phase, setPhase] = useState<"typing" | "pause" | "clear">("typing")
   const [charIndex, setCharIndex] = useState(0)
 
-  const currentMessage = MESSAGES[messageIndex]
-
-  const typeSpeed = 50
+  const current = MESSAGES[messageIndex]
+  const isWarning = current.type === "warn"
+  const typeSpeed = 30
   const pauseDuration = 5000
 
   const skipToNext = useCallback(() => {
@@ -35,13 +31,12 @@ export function CyclingTextPanel({ className = "" }: CyclingTextPanelProps) {
     let timeout: NodeJS.Timeout
 
     if (phase === "typing") {
-      if (charIndex < currentMessage.length) {
+      if (charIndex < current.text.length) {
         timeout = setTimeout(() => {
-          setDisplayedText(currentMessage.slice(0, charIndex + 1))
+          setDisplayedText(current.text.slice(0, charIndex + 1))
           setCharIndex(charIndex + 1)
         }, typeSpeed)
       } else {
-        // Finished typing, go to pause
         setPhase("pause")
       }
     } else if (phase === "pause") {
@@ -56,28 +51,37 @@ export function CyclingTextPanel({ className = "" }: CyclingTextPanelProps) {
     }
 
     return () => clearTimeout(timeout)
-  }, [phase, charIndex, currentMessage])
+  }, [phase, charIndex, current.text])
+
+  const borderClass = isWarning ? "terminal-border-amber" : "terminal-border"
+  const textColor = isWarning ? "text-[color:var(--terminal-amber)]" : "text-primary"
+  const labelColor = isWarning ? "text-[color:var(--terminal-amber-dim)]" : "text-primary"
+  const cursorColor = isWarning ? "var(--terminal-amber)" : "#00ff41"
 
   return (
-    <div className={`terminal-border p-3 ${className}`}>
+    <div className={`${borderClass} p-3 ${className}`}>
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs text-muted-foreground">{">"}</span>
-        <span className="text-xs text-primary font-semibold tracking-wider">SYSTEM_MESSAGE</span>
-        <span className="flex-1 h-px bg-border" />
+        <span className={`text-xs ${isWarning ? "text-[color:var(--terminal-amber-dim)]" : "text-muted-foreground"}`}>
+          {isWarning ? "!" : ">"}
+        </span>
+        <span className={`text-xs ${labelColor} font-semibold tracking-wider`}>
+          {isWarning ? "SYS_WARNING" : "SYSTEM_MESSAGE"}
+        </span>
+        <span className={`flex-1 h-px ${isWarning ? "bg-[color:var(--terminal-amber-dim)]" : "bg-border"}`} />
         <button
           onClick={skipToNext}
-          className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+          className={`text-xs ${isWarning ? "text-[color:var(--terminal-amber-dim)] hover:text-[color:var(--terminal-amber)]" : "text-muted-foreground hover:text-primary"} transition-colors cursor-pointer`}
           title="Next message"
         >
           [{String(messageIndex + 1).padStart(2, "0")}/{String(MESSAGES.length).padStart(2, "0")}]
         </button>
       </div>
       <div className="min-h-[4rem] md:min-h-[3rem]">
-        <p className="text-xs text-primary leading-relaxed">
+        <p className={`text-xs ${textColor} leading-relaxed`}>
           {displayedText}
           <span
             className={`inline-block ml-0.5 ${phase === "pause" ? "animate-pulse" : ""}`}
-            style={{ color: "#00ff41" }}
+            style={{ color: cursorColor }}
           >
             _
           </span>

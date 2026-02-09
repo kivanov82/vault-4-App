@@ -63,9 +63,7 @@ export function PnlChart() {
       }
     }
     load()
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [])
 
   useEffect(() => {
@@ -93,10 +91,7 @@ export function PnlChart() {
     }
     tick()
     const interval = setInterval(tick, 1000)
-    return () => {
-      active = false
-      clearInterval(interval)
-    }
+    return () => { active = false; clearInterval(interval) }
   }, [timePeriod, chartMode])
 
   const data = useMemo(() => {
@@ -124,6 +119,7 @@ export function PnlChart() {
       label: formatLabel(point.timestamp, timePeriod),
     }))
   }, [portfolio, chartMode, timePeriod, liveSeries])
+
   const numericValues = data.map((d) => d.value).filter((value) => Number.isFinite(value))
   const minValue = numericValues.length ? Math.min(...(numericValues as number[])) : 0
   const maxValue = numericValues.length ? Math.max(...(numericValues as number[])) : 0
@@ -138,8 +134,8 @@ export function PnlChart() {
   }, [chartMode, timePeriod])
 
   return (
-    <div className="terminal-border p-3 chart-container">
-      <div className="mb-3 pb-2 border-b border-border">
+    <div className="terminal-border-hero p-3 chart-container">
+      <div className="mb-3 pb-2 border-b border-[color:var(--terminal-cyan-dim)]">
         <LiveDataTicker />
       </div>
 
@@ -185,12 +181,12 @@ export function PnlChart() {
       </div>
 
       <div className="mb-2 flex items-center gap-2">
-        <BlinkingLabel text={chartMode === "PNL" ? "PNL_CHART" : "ACCOUNT_VALUE_CHART"} />
+        <BlinkingLabel text={chartMode === "PNL" ? "PNL_CHART" : "ACCOUNT_VALUE_CHART"} prefix="#" />
         <span className="signal-dot" />
         <span className="text-[10px] text-muted-foreground signal-text">LIVE</span>
       </div>
 
-      <div className="h-40 md:h-48 chart-glow">
+      <div className="h-48 md:h-56 chart-glow">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart key={animationKey} data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>

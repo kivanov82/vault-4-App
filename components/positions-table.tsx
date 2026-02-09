@@ -41,6 +41,24 @@ type HistoryResponse = {
 
 const API_BASE = process.env.NEXT_PUBLIC_VAULT_API_BASE_URL ?? "http://localhost:3000"
 
+function TerminalLoader({ text }: { text: string }) {
+  return (
+    <div className="flex items-center justify-center gap-3 py-4">
+      <div className="terminal-loader-bar" />
+      <span className="text-xs text-muted-foreground">{text}</span>
+    </div>
+  )
+}
+
+function roeColorClass(roe: number | null): string {
+  if (roe === null) return "text-muted-foreground"
+  if (roe <= -5) return "roe-deep-red"
+  if (roe < 0) return "roe-red"
+  if (roe === 0) return "roe-neutral"
+  if (roe < 10) return "roe-green"
+  return "roe-bright-green"
+}
+
 export function PositionsTable() {
   const [activeTab, setActiveTab] = useState<"positions" | "history">("positions")
   const [positionsData, setPositionsData] = useState<PositionsResponse | null>(null)
@@ -75,9 +93,7 @@ export function PositionsTable() {
 
     loadPositions()
 
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [])
 
   useEffect(() => {
@@ -97,9 +113,7 @@ export function PositionsTable() {
 
     loadHistory()
 
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [historyPage])
 
   const positions = positionsData?.positions ?? []
@@ -110,6 +124,14 @@ export function PositionsTable() {
   const totalTvl =
     positionsData?.totalInvestedUsd ??
     positions.reduce((sum, position) => sum + (position.amountUsd ?? 0), 0)
+
+  const maxSizePct = Math.max(
+    ...positions.map((p) =>
+      totalTvl > 0 && p.amountUsd != null ? (p.amountUsd / totalTvl) * 100 : 0
+    ),
+    1,
+  )
+
   const positionsWithSize = positions.map((position) => ({
     ...position,
     sizePctFromTvl:
@@ -117,6 +139,7 @@ export function PositionsTable() {
         ? (position.amountUsd / totalTvl) * 100
         : null,
   }))
+
   const sortedPositions = [...positionsWithSize].sort((a, b) => {
     const direction = sortConfig.direction === "asc" ? 1 : -1
     const compareNullable = (left: number | string | null, right: number | string | null) => {
@@ -131,10 +154,7 @@ export function PositionsTable() {
 
     switch (sortConfig.key) {
       case "asset":
-        return (
-          direction *
-          compareNullable(a.vaultName ?? a.vaultAddress, b.vaultName ?? b.vaultAddress)
-        )
+        return direction * compareNullable(a.vaultName ?? a.vaultAddress, b.vaultName ?? b.vaultAddress)
       case "size":
         return direction * compareNullable(a.sizePctFromTvl, b.sizePctFromTvl)
       case "amount":
@@ -147,6 +167,7 @@ export function PositionsTable() {
         return 0
     }
   })
+
   const toggleSort = (key: "asset" | "size" | "amount" | "pnl" | "roe") => {
     setSortConfig((prev) => {
       if (prev.key === key) {
@@ -156,6 +177,7 @@ export function PositionsTable() {
       return { key, direction: defaultDirection }
     })
   }
+
   const sortIndicator = (key: "asset" | "size" | "amount" | "pnl" | "roe") => {
     if (sortConfig.key !== key) return ""
     return sortConfig.direction === "asc" ? " ^" : " v"
@@ -164,7 +186,7 @@ export function PositionsTable() {
   return (
     <div className="terminal-border p-3">
       <div className="flex items-center justify-between mb-3">
-        <BlinkingLabel text="TRADE_DATA" />
+        <BlinkingLabel text="TRADE_DATA" prefix="::" />
         <div className="flex gap-1">
           {tabs.map((tab) => (
             <button
@@ -184,68 +206,64 @@ export function PositionsTable() {
 
       <div className="overflow-x-auto">
         {activeTab === "positions" && (
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-border text-muted-foreground">
-              <th
-                className="text-left py-2 pr-2 cursor-pointer select-none"
-                onClick={() => toggleSort("asset")}
-              >
-                ASSET{sortIndicator("asset")}
-              </th>
-              <th
-                className="text-right py-2 px-2 cursor-pointer select-none"
-                onClick={() => toggleSort("size")}
-              >
-                SIZE{sortIndicator("size")}
-              </th>
-              <th
-                className="text-right py-2 px-2 hidden sm:table-cell cursor-pointer select-none"
-                onClick={() => toggleSort("amount")}
-              >
-                AMOUNT{sortIndicator("amount")}
-              </th>
-              <th
-                className="text-right py-2 px-2 cursor-pointer select-none"
-                onClick={() => toggleSort("pnl")}
-              >
-                PNL{sortIndicator("pnl")}
-              </th>
-              <th
-                className="text-right py-2 pl-2 cursor-pointer select-none"
-                onClick={() => toggleSort("roe")}
-              >
-                ROE{sortIndicator("roe")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedPositions.map((pos, i) => (
-              <tr key={i} className="border-b border-border/30 hover:bg-secondary/30 transition-colors">
-                <td className="py-2 pr-2 font-semibold text-primary">
-                  {pos.vaultName ?? formatAddress(pos.vaultAddress)}
-                </td>
-                <td className="py-2 px-2 text-right text-primary">
-                  {formatPercent(pos.sizePctFromTvl)}
-                </td>
-                <td className="py-2 px-2 text-right hidden sm:table-cell">{formatUsd(pos.amountUsd)}</td>
-                <td className={`py-2 px-2 text-right ${formatSignedClass(pos.pnlUsd)}`}>
-                  {formatUsdSigned(pos.pnlUsd)}
-                </td>
-                <td className={`py-2 pl-2 text-right ${formatSignedClass(pos.roePct)}`}>
-                  {formatPercentSigned(pos.roePct)}
-                </td>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground">
+                <th className="text-left py-2 pr-2 cursor-pointer select-none" onClick={() => toggleSort("asset")}>
+                  VAULT{sortIndicator("asset")}
+                </th>
+                <th className="text-right py-2 px-2 cursor-pointer select-none" onClick={() => toggleSort("size")}>
+                  SIZE{sortIndicator("size")}
+                </th>
+                <th className="text-right py-2 px-2 hidden sm:table-cell cursor-pointer select-none" onClick={() => toggleSort("amount")}>
+                  AMOUNT{sortIndicator("amount")}
+                </th>
+                <th className="text-right py-2 px-2 cursor-pointer select-none" onClick={() => toggleSort("pnl")}>
+                  PNL{sortIndicator("pnl")}
+                </th>
+                <th className="text-right py-2 pl-2 cursor-pointer select-none" onClick={() => toggleSort("roe")}>
+                  ROE{sortIndicator("roe")}
+                </th>
               </tr>
-            ))}
-            {!positions.length && (
-              <tr className="border-b border-border/30">
-                <td className="py-3 text-center text-muted-foreground" colSpan={5}>
-                  {loadingPositions ? "LOADING_POSITIONS..." : "NO_POSITIONS"}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sortedPositions.map((pos, i) => {
+                const barWidth = pos.sizePctFromTvl != null ? (pos.sizePctFromTvl / maxSizePct) * 100 : 0
+                return (
+                  <tr key={i} className="border-b border-border/30 hover:bg-secondary/30 transition-colors">
+                    <td className="py-2 pr-2 font-semibold text-primary">
+                      <a
+                        href={`https://app.hyperliquid.xyz/vaults/${pos.vaultAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline hover:text-[color:var(--terminal-cyan)] transition-colors"
+                      >
+                        {pos.vaultName ?? formatAddress(pos.vaultAddress)}
+                      </a>
+                    </td>
+                    <td className="py-2 px-2 text-right text-primary position-bar-cell">
+                      <div className="position-bar" style={{ width: `${barWidth}%` }} />
+                      <span className="relative z-10">{formatPercent(pos.sizePctFromTvl)}</span>
+                    </td>
+                    <td className="py-2 px-2 text-right hidden sm:table-cell">{formatUsd(pos.amountUsd)}</td>
+                    <td className={`py-2 px-2 text-right ${formatSignedClass(pos.pnlUsd)}`}>
+                      {formatUsdSigned(pos.pnlUsd)}
+                    </td>
+                    <td className={`py-2 pl-2 text-right ${roeColorClass(pos.roePct)}`}>
+                      {formatPercentSigned(pos.roePct)}
+                    </td>
+                  </tr>
+                )
+              })}
+              {!positions.length && (
+                <tr className="border-b border-border/30">
+                  <td className="py-3 text-center text-muted-foreground" colSpan={5}>
+                    {loadingPositions ? <TerminalLoader text="LOADING_POSITIONS" /> : "NO_POSITIONS"}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         )}
         {activeTab === "history" && (
           <table className="w-full text-xs">
@@ -262,7 +280,7 @@ export function PositionsTable() {
               {history.map((entry, i) => (
                 <tr key={`${entry.vaultAddress}-${entry.time}-${i}`} className="border-b border-border/30">
                   <td className="py-2 pr-2 text-muted-foreground">{formatDate(entry.time)}</td>
-                  <td className="py-2 px-2 text-primary">
+                  <td className={`py-2 px-2 ${entry.type === "vaultDeposit" ? "text-primary" : "text-[color:var(--terminal-cyan)]"}`}>
                     {entry.type === "vaultDeposit" ? "DEPOSIT" : "WITHDRAW"}
                   </td>
                   <td className="py-2 px-2 text-primary">
@@ -277,7 +295,7 @@ export function PositionsTable() {
               {!history.length && (
                 <tr className="border-b border-border/30">
                   <td className="py-3 text-center text-muted-foreground" colSpan={5}>
-                    {loadingHistory ? "LOADING_HISTORY..." : "NO_HISTORY"}
+                    {loadingHistory ? <TerminalLoader text="LOADING_HISTORY" /> : "NO_HISTORY"}
                   </td>
                 </tr>
               )}

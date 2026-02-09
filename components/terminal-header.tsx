@@ -15,8 +15,6 @@ export function TerminalHeader() {
   const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
-  const betaTooltip =
-    "The platform is in beta mode; deposits will be enabled once the model is proven."
   const isWrongChain = isConnected && chainId !== hyperliquidChain.id
   const labelText = "// Vault 4 - AI-driven fund-of-vaults on Hyperliquid"
 
@@ -43,7 +41,7 @@ export function TerminalHeader() {
     <header className="terminal-border p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h1 
+          <h1
             className="text-sm md:text-base font-bold glow-pulse truncate glitch-hover cursor-default"
             data-text="> Vault 4"
           >
@@ -53,9 +51,9 @@ export function TerminalHeader() {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="text-xs text-muted-foreground hidden sm:flex flex-col items-end font-mono">
-            <span className="text-[10px] opacity-60">UPTIME</span>
-            <span className="text-primary">{timeSinceLaunch}</span>
+          <div className="text-xs hidden sm:flex flex-col items-end font-mono">
+            <span className="text-[10px] text-[color:var(--terminal-cyan-dim)]">UPTIME</span>
+            <span className="text-[color:var(--terminal-cyan)] glow-text-cyan">{timeSinceLaunch}</span>
           </div>
           {isWrongChain && (
             <button
@@ -84,8 +82,8 @@ export function TerminalHeader() {
               {isConnected ? "[ DISCONNECT ]" : "[ CONNECT ]"}
             </button>
             {!isConnected && (
-              <span className="mt-1 px-2 py-1 text-[10px] uppercase tracking-[0.2em] font-mono bg-black/90 border border-[color:var(--terminal-green-bright)] text-primary rounded-sm shadow-[0_0_12px_rgba(39,250,218,0.45)] absolute -bottom-14 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none opacity-0 translate-y-1 transition duration-150 ease-out group-hover:opacity-100 group-hover:translate-y-0">
-                The platform is in beta; deposits enable once the model proves itself.
+              <span className="mt-1 px-2 py-1 text-[10px] uppercase tracking-[0.2em] font-mono bg-black/90 border border-[color:var(--terminal-amber)] text-[color:var(--terminal-amber)] rounded-sm shadow-[0_0_12px_rgba(255,191,0,0.3)] absolute -bottom-14 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none opacity-0 translate-y-1 transition duration-150 ease-out group-hover:opacity-100 group-hover:translate-y-0">
+                Beta mode - deposits enable once model proves itself
               </span>
             )}
           </div>
@@ -94,8 +92,8 @@ export function TerminalHeader() {
 
       {isConnected && (
         <div className="mt-2 pt-2 border-t border-border/50 flex items-center gap-2 text-xs">
-          <span className="inline-block w-2 h-2 bg-primary rounded-full animate-pulse" />
-          <span className={isWrongChain ? "text-destructive" : "text-primary"}>HYPERLIQUID</span>
+          <span className="inline-block w-2 h-2 bg-[color:var(--terminal-cyan)] rounded-full animate-pulse" />
+          <span className={isWrongChain ? "text-destructive" : "text-[color:var(--terminal-cyan)]"}>HYPERLIQUID</span>
           <span className="text-muted-foreground truncate">{formatAddress(address)}</span>
         </div>
       )}

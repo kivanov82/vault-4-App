@@ -45,7 +45,7 @@ export function LiveDataTicker() {
           ]
           const maxChange = changes.reduce((a, b) => (a.diff > b.diff ? a : b))
           setFlash(maxChange.key)
-          setTimeout(() => setFlash(null), 200)
+          setTimeout(() => setFlash(null), 300)
         }
         return next
       })
@@ -63,23 +63,23 @@ export function LiveDataTicker() {
   return (
     <div className="flex items-center gap-3 text-[10px] overflow-x-auto scrollbar-hide">
       <div className={`flex items-center gap-1 transition-all ${flash === "hype" ? "data-flash" : ""}`}>
-        <span className="text-muted-foreground">$HYPE:</span>
-        <span className="text-primary glow-text">{formatPrice(data?.hypePrice)}</span>
+        <span className="text-[color:var(--terminal-cyan-dim)]">$HYPE:</span>
+        <span className="text-[color:var(--terminal-cyan)] glow-text-cyan">{formatPrice(data?.hypePrice)}</span>
       </div>
-      <span className="text-muted-foreground">|</span>
+      <span className="text-[color:var(--terminal-cyan-dim)]">|</span>
       <div className={`flex items-center gap-1 transition-all ${flash === "vol" ? "data-flash" : ""}`}>
-        <span className="text-muted-foreground">VOL_24H:</span>
-        <span className="text-primary">{formatVolume(data?.volume24h)}</span>
+        <span className="text-[color:var(--terminal-cyan-dim)]">VOL_24H:</span>
+        <span className="text-[color:var(--terminal-cyan)]">{formatVolume(data?.volume24h)}</span>
       </div>
-      <span className="text-muted-foreground">|</span>
+      <span className="text-[color:var(--terminal-cyan-dim)]">|</span>
       <div className={`flex items-center gap-1 transition-all ${flash === "oi" ? "data-flash" : ""}`}>
-        <span className="text-muted-foreground">OI:</span>
-        <span className="text-primary">{formatOpenInterest(data?.openInterest)}</span>
+        <span className="text-[color:var(--terminal-cyan-dim)]">OI:</span>
+        <span className="text-[color:var(--terminal-cyan)]">{formatOpenInterest(data?.openInterest)}</span>
       </div>
-      <span className="text-muted-foreground">|</span>
+      <span className="text-[color:var(--terminal-cyan-dim)]">|</span>
       <div className={`flex items-center gap-1 transition-all ${flash === "fr" ? "data-flash" : ""}`}>
-        <span className="text-muted-foreground">FR:</span>
-        <span className={data && data.fundingRate < 0 ? "text-destructive" : "text-primary"}>
+        <span className="text-[color:var(--terminal-cyan-dim)]">FR:</span>
+        <span className={data && data.fundingRate < 0 ? "text-destructive" : "text-[color:var(--terminal-cyan)]"}>
           {formatFundingRate(data?.fundingRate)}
         </span>
       </div>

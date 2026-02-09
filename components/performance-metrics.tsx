@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { BlinkingLabel } from "./blinking-label"
 
 type MetricsResponse = {
@@ -12,6 +12,28 @@ type MetricsResponse = {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_VAULT_API_BASE_URL ?? "http://localhost:3000"
+
+function useCountUp(target: number | null, duration = 1200) {
+  const [value, setValue] = useState<number | null>(null)
+  const rafRef = useRef<number>(0)
+
+  useEffect(() => {
+    if (target === null) { setValue(null); return }
+    const start = performance.now()
+    const from = 0
+    const animate = (now: number) => {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setValue(from + (target - from) * eased)
+      if (progress < 1) rafRef.current = requestAnimationFrame(animate)
+    }
+    rafRef.current = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [target, duration])
+
+  return value
+}
 
 export function PerformanceMetrics() {
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null)
@@ -31,58 +53,66 @@ export function PerformanceMetrics() {
       }
     }
     load()
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [])
+
+  const tvl = useCountUp(metrics?.tvlUsd ?? null)
+  const pnl30d = useCountUp(metrics?.pnlChange30dPct ?? null)
+  const drawdown = useCountUp(metrics?.maxDrawdownPct ?? null)
+  const winRate = useCountUp(metrics?.winRatePct ?? null)
 
   const items = [
     {
       label: "30D_TVL",
-      value: formatUsd(metrics?.tvlUsd),
-      change:
-        metrics?.tvlChange30dUsd === null || metrics?.tvlChange30dUsd === undefined
-          ? null
-          : formatUsdSigned(metrics?.tvlChange30dUsd),
-      changeValue:
-        metrics?.tvlChange30dUsd === null || metrics?.tvlChange30dUsd === undefined
-          ? null
-          : metrics?.tvlChange30dUsd,
+      value: formatUsd(tvl),
+      change: metrics?.tvlChange30dUsd != null ? formatUsdSigned(metrics.tvlChange30dUsd) : null,
+      changeValue: metrics?.tvlChange30dUsd ?? null,
+      negative: false,
     },
     {
-      label: "30D_PERFORMANCE",
-      value: formatPercentSigned(metrics?.pnlChange30dPct),
+      label: "30D_PNL",
+      value: formatPercentSigned(pnl30d),
       change: null,
       changeValue: null,
+      negative: (metrics?.pnlChange30dPct ?? 0) < 0,
     },
     {
-      label: "MAX_DRAWDOWN",
-      value: formatPercentSigned(metrics?.maxDrawdownPct),
+      label: "30D_MAX_DRAWDOWN",
+      value: formatPercentSigned(drawdown),
       change: null,
       changeValue: null,
+      negative: true,
     },
     {
       label: "WIN_RATE",
-      value: formatPercent(metrics?.winRatePct),
+      value: formatPercent(winRate),
       change: null,
       changeValue: null,
+      negative: false,
     },
   ]
 
   return (
     <div className="terminal-border p-3">
-      <BlinkingLabel text="PERFORMANCE_METRICS" />
+      <BlinkingLabel text="PERFORMANCE_METRICS" prefix="$" color="cyan" />
 
       <div className="grid grid-cols-2 gap-2 mt-3">
         {items.map((metric) => (
-          <div key={metric.label} className="terminal-border p-2">
-            <span className="text-xs text-muted-foreground block truncate">{metric.label}</span>
+          <div
+            key={metric.label}
+            className={`terminal-border-inset p-2 metric-card ${metric.negative ? "metric-card-negative" : ""}`}
+          >
+            <span className="text-[10px] text-[color:var(--terminal-cyan-dim)] block truncate">
+              {metric.label}
+            </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-sm font-semibold text-primary">
                 {metric.value ?? (loading ? "..." : "--")}
               </span>
               {metric.change && (
-                <span className={`text-xs ${formatSignedClass(metric.changeValue)}`}>{metric.change}</span>
+                <span className={`text-xs ${formatSignedClass(metric.changeValue)}`}>
+                  {metric.change}
+                </span>
               )}
             </div>
           </div>
@@ -116,5 +146,5 @@ function formatPercentSigned(value?: number | null) {
 
 function formatSignedClass(value?: number | null) {
   if (value === undefined || value === null) return "text-muted-foreground"
-  return value >= 0 ? "text-[color:var(--terminal-green-bright)]" : "text-destructive"
+  return value >= 0 ? "text-[color:var(--terminal-green)] font-medium" : "text-destructive font-medium"
 }
